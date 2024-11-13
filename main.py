@@ -18,11 +18,11 @@ def run(keys, module):
         counter = f"[{index}/{total_keys}]"
         address = Account.from_key(private_key).address
 
-        module = random.choice(module) if isinstance(module, list) else module
-        logger.info(f"{counter} Performing action: {module.__name__}")
+        action = random.choice(module) if isinstance(module, list) else module
+        logger.info(f"{counter} Performing action: {action.__name__}")
 
         try:
-            tx_status = module(private_key, counter)
+            tx_status = action(private_key, counter)
 
             if tx_status and index < total_keys:
                 sleep(*settings.SLEEP_BETWEEN_WALLETS)
