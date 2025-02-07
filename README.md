@@ -13,17 +13,19 @@ pip install -r requirements.txt
 ```
 
 ## ⚙️ Settings
+```env
+# WOW.XYZ
+MCAP_RANK = 20  # TOP 20 by market cap
+BUY_VALUE = [0.05, 0.3]  # $0.05 - $0.30
+CACHE_MAX_AGE = 5  # update json cache every 5 min
 
-### WOW.XYZ
+# Account management
+SHUFFLE_KEYS = True
+USE_PROXY = True
 
-* `MCAP_RANK` 
-* `BUY_VALUE` 
-* `CACHE_MAX_AGE` 
+SLEEP_BETWEEN_WALLETS = [30, 60]
+SLEEP_BETWEEN_ACTIONS = [10, 20]
 
+RETRY = 1
 
-### Account management
-
-* `SLEEP_BETWEEN_WALLETS` 
-* `SLEEP_BETWEEN_ACTIONS` 
-* `SHUFFLE_KEYS` 
-* `RETRY_COUNT` 
+```
