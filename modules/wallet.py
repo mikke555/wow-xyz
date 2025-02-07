@@ -1,5 +1,6 @@
 from eth_account import Account
 from web3 import Web3
+from web3.exceptions import Web3Exception
 
 import settings
 from modules.config import CHAIN_DATA, ERC20_ABI, logger
@@ -71,13 +72,29 @@ class Wallet:
             **kwargs,
         }
 
+    def get_gas(self, tx: dict) -> dict:
+        max_priority_fee = self.w3.eth.max_priority_fee
+        latest_block = self.w3.eth.get_block("latest")
+        base_fee = latest_block["baseFeePerGas"]
+
+        tx["maxFeePerGas"] = max_priority_fee + base_fee
+        tx["maxPriorityFeePerGas"] = max_priority_fee
+
+        if not tx.get("gas"):
+            tx["gas"] = self.w3.eth.estimate_gas(tx)
+
+        return tx
+
     def sign_tx(self, tx):
         return self.w3.eth.account.sign_transaction(tx, self.private_key)
 
-    def send_tx(self, tx, tx_label="", retry=0, gas_increment=1.2):
+    def send_tx(self, tx, tx_label="", retry_count=0, gas_increment=1.2):
         try:
-            if retry > 0:
-                # Increment gas by 10% for each retry & recalculate nonce
+            if not tx.get("maxFeePerGas"):
+                tx = self.get_gas(tx)
+
+            if retry_count > 0:
+                # Increment gas by 10% and recalculate nonce after failed tx
                 tx["gas"] = int(tx["gas"] * gas_increment)
                 tx["nonce"] = self.w3.eth.get_transaction_count(self.address)
 
@@ -88,20 +105,20 @@ class Wallet:
 
             tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=400)
 
-            attempts = f"after {retry + 1} attempts" if retry > 0 else ""
+            attempts = f"after {retry_count + 1} attempts" if retry_count > 0 else ""
 
             if tx_receipt.status == 1:
                 logger.success(f"{tx_label} | Tx confirmed {attempts} \n")
                 return tx_receipt.status
-            else:
-                raise Exception(f"{tx_label} | Tx Failed \n")
+
+            raise Web3Exception(f"{tx_label} | Tx Failed \n")
 
         except Exception as error:
             logger.error(f"{tx_label} | {error} \n")
-            if retry < settings.RETRY_COUNT:
+            if retry_count < settings.RETRY:
                 random_sleep(*settings.SLEEP_BETWEEN_ACTIONS)
 
-                return self.send_tx(tx, tx_label, retry=retry + 1)
+                return self.send_tx(tx, tx_label, retry_count=retry_count + 1)
 
     def check_allowance(self, token_addr, spender):
         token = self.get_contract(token_addr)

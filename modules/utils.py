@@ -3,6 +3,7 @@ import os
 import random
 import time
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Dict, List
 
 import questionary
@@ -31,7 +32,7 @@ def wei(amount_eth: float) -> int:
     return Web3.to_wei(amount_eth, "ether")
 
 
-def ether(amount_wei: int) -> float:
+def ether(amount_wei: int) -> Decimal:
     return Web3.from_wei(amount_wei, "ether")
 
 
@@ -56,9 +57,10 @@ def sort_by_mcap(data: List[Dict], limit: int = settings.MCAP_RANK) -> List[Dict
 def get_coins(json_path: str) -> None:
     """Fetches coin data from wow.xyz and writes to a json file"""
     json_data = {
-        "query": "query pagesWowHomePageQuery(\n  $sortType: WowTrendingType!\n  $chainName: EChainName!\n) {\n  ...WowHomePageTokenListFragment_2IshaC\n}\n\nfragment WowHomePageTokenListFragment_2IshaC on Query {\n  wowTrending(trendingType: $sortType, order: DESC, chainName: $chainName, first: 50) {\n    edges {\n      node {\n        name\n        address\n        chainId\n        description\n        creator {\n          __typename\n          avatar {\n            small\n          }\n          handle\n          walletAddress\n          ... on Node {\n            __isNode: __typename\n            id\n          }\n        }\n        hasGraduated\n        image {\n          mimeType\n          originalUri\n          medium\n        }\n        usdPrice\n        symbol\n        totalSupply\n        marketCap\n        blockTimestamp\n        nsfw\n        socialLinks {\n          twitter\n          discord\n          website\n          telegram\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n    count\n  }\n}\n",
+        "query": "query pagesWowHomePageQuery(\n  $sortType: WowTrendingType!\n  $chainName: EChainName!\n  $nsfw: Boolean!\n) {\n  ...WowHomePageTokenListFragment_43XfE1\n}\n\nfragment WowHomePageTokenListFragment_43XfE1 on Query {\n  wowTrending(trendingType: $sortType, order: DESC, chainName: $chainName, nsfw: $nsfw, first: 20) {\n    edges {\n      node {\n        name\n        address\n        chainId\n        description\n        creator {\n          __typename\n          avatar {\n            small\n          }\n          handle\n          walletAddress\n          id\n        }\n        hasGraduated\n        image {\n          mimeType\n          originalUri\n          medium\n        }\n        video {\n          mimeType\n          originalUri\n        }\n        usdPrice\n        symbol\n        totalSupply\n        marketCap\n        blockTimestamp\n        nsfw\n        socialLinks {\n          twitter\n          discord\n          website\n          telegram\n        }\n        id\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n    count\n  }\n}\n",
         "variables": {
             "sortType": "MARKETCAP",
+            "nsfw": False,
             "chainName": "BaseMainnet",
         },
     }
@@ -109,6 +111,7 @@ def fetch_data(
     if not json_data:
         logger.info("Fetching data from remote API\n")
         get_coins(json_path)
+
         # Load the newly fetched data
         with open(json_path, "r") as f:
             json_data = json.load(f)

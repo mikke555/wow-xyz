@@ -1,6 +1,7 @@
 import random
 
 from eth_account import Account
+from web3.exceptions import ContractLogicError
 
 import settings
 from modules.config import logger
@@ -13,22 +14,42 @@ def run(keys, module):
         random.shuffle(keys)
 
     total_keys = len(keys)
+    max_attempts = 3
 
     for index, private_key in enumerate(keys, start=1):
         counter = f"[{index}/{total_keys}]"
         address = Account.from_key(private_key).address
 
-        action = random.choice(module) if isinstance(module, list) else module
-        logger.info(f"{counter} Performing action: {action.__name__}")
+        # Convert module into a list
+        actions = module if isinstance(module, list) else [module]
 
-        try:
-            tx_status = action(private_key, counter)
+        attempts = 0
+        while attempts < max_attempts:
+            action = random.choice(actions)
+            logger.info(f"{counter} action: {action.__name__}")
 
-            if tx_status and index < total_keys:
-                sleep(*settings.SLEEP_BETWEEN_WALLETS)
+            try:
+                tx_status = action(private_key, counter)
 
-        except Exception as error:
-            logger.error(f"{counter} {address} | Error processing wallet: {error}\n")
+                if tx_status and index < total_keys:
+                    sleep(*settings.SLEEP_BETWEEN_WALLETS)
+                break  # Success, move on to the next wallet
+
+            except ContractLogicError as err:
+                logger.error(f"{counter} {address} | ContractLogicError: {err}")
+                logger.debug(f"{counter} {address} | Retrying with a different action")
+
+                attempts += 1
+
+            except Exception as error:
+                logger.error(
+                    f"{counter} {address} | Error processing wallet: {error}\n"
+                )
+                break
+        else:
+            logger.error(
+                f"{counter} {address} | Exceeded maximum attempts for this wallet"
+            )
 
 
 def main():

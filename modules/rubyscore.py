@@ -2,10 +2,10 @@ from modules.config import RUBBYSCORE
 from modules.wallet import Wallet
 
 
-class RubbyScore(Wallet):
+class RubyScore(Wallet):
     def __init__(self, private_key, counter):
         super().__init__(private_key, counter)
-        self.label += "RubbyScore |"
+        self.label += "RubyScore |"
         self.contract = self.get_contract(
             RUBBYSCORE, abi=[{"type": "function", "name": "vote", "inputs": []}]
         )

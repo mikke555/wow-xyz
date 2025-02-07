@@ -11,7 +11,7 @@ class Token(Wallet):
         super().__init__(private_key, counter)
         self.coin = random.choice(coin_data)["node"]
 
-        self.label += f"${self.coin['symbol'].upper()} |"
+        self.label += f"{self.coin['symbol'].upper()} |"
         self.usd_price = float(self.coin["usdPrice"])
 
         self.contract = self.get_contract(self.coin["address"])
