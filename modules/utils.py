@@ -56,6 +56,16 @@ def sort_by_mcap(data: List[Dict], limit: int = settings.MCAP_RANK) -> List[Dict
 
 def get_coins(json_path: str) -> None:
     """Fetches coin data from wow.xyz and writes to a json file"""
+
+    with open("proxies.txt") as file:
+        proxies = [f"http://{row.strip()}" for row in file if row.strip()]
+
+    if settings.USE_PROXY and not proxies:
+        logger.warning("proxies.txt is emppty")
+        quit()
+
+    proxy = random.choice(proxies) if settings.USE_PROXY else None
+
     json_data = {
         "query": "query pagesWowHomePageQuery(\n  $sortType: WowTrendingType!\n  $chainName: EChainName!\n  $nsfw: Boolean!\n) {\n  ...WowHomePageTokenListFragment_43XfE1\n}\n\nfragment WowHomePageTokenListFragment_43XfE1 on Query {\n  wowTrending(trendingType: $sortType, order: DESC, chainName: $chainName, nsfw: $nsfw, first: 20) {\n    edges {\n      node {\n        name\n        address\n        chainId\n        description\n        creator {\n          __typename\n          avatar {\n            small\n          }\n          handle\n          walletAddress\n          id\n        }\n        hasGraduated\n        image {\n          mimeType\n          originalUri\n          medium\n        }\n        video {\n          mimeType\n          originalUri\n        }\n        usdPrice\n        symbol\n        totalSupply\n        marketCap\n        blockTimestamp\n        nsfw\n        socialLinks {\n          twitter\n          discord\n          website\n          telegram\n        }\n        id\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n    count\n  }\n}\n",
         "variables": {
@@ -65,7 +75,14 @@ def get_coins(json_path: str) -> None:
         },
     }
 
-    resp = requests.post("https://api.wow.xyz/universal/graphql", json=json_data)
+    resp = requests.post(
+        "https://api.wow.xyz/universal/graphql",
+        json=json_data,
+        proxies={
+            "http": proxy,
+            "https": proxy,
+        },
+    )
 
     if resp.status_code != 200:
         print(f"HTTP Error: {resp.status_code} {resp.text}")

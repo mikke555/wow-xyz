@@ -42,9 +42,7 @@ def run(keys, module):
                 attempts += 1
 
             except Exception as error:
-                logger.error(
-                    f"{counter} {address} | Error processing wallet: {error}\n"
-                )
+                logger.error(f"{counter} {address} | An error occurred: {error}\n")
                 break
         else:
             logger.error(
